@@ -1,20 +1,63 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import StatusBadge from '../components/StatusBadge';
 import { formatDate, getDaysUntilExpiry } from '../utils/certUtils';
-import { RiArrowLeftLine, RiDownloadLine, RiAwardLine, RiCalendarLine, RiBuildingLine } from 'react-icons/ri';
+import { RiArrowLeftLine, RiDownloadLine, RiAwardLine, RiCalendarLine, RiBuildingLine, RiDeleteBinLine, RiEditLine } from 'react-icons/ri';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 const CertificateViewPage = () => {
     const { id } = useParams();
-    const { getCertById } = useData();
+    const { getCertById, deleteCertification } = useData();
     const navigate = useNavigate();
-    const cert = getCertById(id);
 
-    if (!cert) {
+    const [cert, setCert] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [deleting, setDeleting] = useState(false);
+
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            try {
+                const data = await getCertById(id);
+                setCert(data);
+            } catch (err) {
+                setError('Certificate not found or access denied.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [id]);
+
+    const handleDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete this certification?')) return;
+        setDeleting(true);
+        try {
+            await deleteCertification(cert.id);
+            navigate('/certifications');
+        } catch (err) {
+            alert('Failed to delete certification.');
+            setDeleting(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="empty-state fade-up">
+                <div className="empty-state-icon">⏳</div>
+                <div className="empty-state-text">Loading certificate...</div>
+            </div>
+        );
+    }
+
+    if (error || !cert) {
         return (
             <div className="empty-state fade-up">
                 <div className="empty-state-icon">❌</div>
-                <div className="empty-state-text">Certificate not found</div>
+                <div className="empty-state-text">{error || 'Certificate not found'}</div>
                 <button className="btn-primary-custom" onClick={() => navigate('/certifications')} style={{ marginTop: 16 }}>
                     <RiArrowLeftLine /> Back to My Certifications
                 </button>
@@ -29,11 +72,22 @@ const CertificateViewPage = () => {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Certificate Details</h1>
-                    <p className="page-subtitle">View and download your certificate</p>
+                    <p className="page-subtitle">View and manage your certificate</p>
                 </div>
-                <button className="btn-secondary-custom" onClick={() => navigate(-1)}>
-                    <RiArrowLeftLine /> Back
-                </button>
+                <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="btn-secondary-custom" onClick={() => navigate(-1)}>
+                        <RiArrowLeftLine /> Back
+                    </button>
+                    <button
+                        className="btn-icon"
+                        title="Delete"
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        style={{ color: 'var(--accent-red)', padding: '8px 14px', borderRadius: 'var(--radius-sm)', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+                    >
+                        <RiDeleteBinLine /> {deleting ? 'Deleting...' : 'Delete'}
+                    </button>
+                </div>
             </div>
 
             <div className="cert-view-card">
@@ -63,7 +117,7 @@ const CertificateViewPage = () => {
                     </div>
                     <div className="cert-detail-item">
                         <label>Certificate ID</label>
-                        <span style={{ fontFamily: 'monospace', fontSize: 13 }}>#{cert.certId.slice(-6).toUpperCase()}</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: 13 }}>#{cert.id?.slice(-6).toUpperCase()}</span>
                     </div>
                     <div className="cert-detail-item">
                         <label><RiCalendarLine style={{ marginRight: 4 }} /> Issue Date</label>
@@ -75,6 +129,24 @@ const CertificateViewPage = () => {
                             {formatDate(cert.expiryDate)}
                         </span>
                     </div>
+                    {cert.renewalStatus && cert.renewalStatus !== 'NONE' && (
+                        <div className="cert-detail-item">
+                            <label>Renewal Status</label>
+                            <span style={{
+                                color: cert.renewalStatus === 'APPROVED' ? 'var(--accent-green)' :
+                                    cert.renewalStatus === 'REJECTED' ? 'var(--accent-red)' : 'var(--accent-orange)',
+                                fontWeight: 600
+                            }}>
+                                {cert.renewalStatus}
+                            </span>
+                        </div>
+                    )}
+                    {cert.notifiedAt && (
+                        <div className="cert-detail-item">
+                            <label>Last Notified</label>
+                            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{formatDate(cert.notifiedAt)}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Progress Bar */}
@@ -95,7 +167,7 @@ const CertificateViewPage = () => {
                 })()}
 
                 {/* File Preview / Download */}
-                {cert.fileData ? (
+                {cert.fileUrl ? (
                     <div className="file-preview-box">
                         <div style={{ fontSize: 32, marginBottom: 10 }}>
                             {cert.fileName?.endsWith('.pdf') ? '📄' : '🖼'}
@@ -104,13 +176,21 @@ const CertificateViewPage = () => {
                         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Certificate file attached</div>
 
                         {cert.fileName && !cert.fileName.endsWith('.pdf') && (
-                            <img src={cert.fileData} alt="Certificate" style={{
-                                maxWidth: '100%', maxHeight: 300, borderRadius: 8,
-                                border: '1px solid var(--border)', marginBottom: 16
-                            }} />
+                            <img
+                                src={`${API_URL}${cert.fileUrl}`}
+                                alt="Certificate"
+                                style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 16 }}
+                            />
                         )}
 
-                        <a href={cert.fileData} download={cert.fileName} className="btn-primary-custom" style={{ display: 'inline-flex' }}>
+                        <a
+                            href={`${API_URL}${cert.fileUrl}`}
+                            download={cert.fileName}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn-primary-custom"
+                            style={{ display: 'inline-flex' }}
+                        >
                             <RiDownloadLine /> Download Certificate
                         </a>
                     </div>

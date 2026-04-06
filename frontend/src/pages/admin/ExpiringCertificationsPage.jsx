@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import StatusBadge from '../../components/StatusBadge';
 import { formatDate, getDaysUntilExpiry } from '../../utils/certUtils';
@@ -7,8 +7,31 @@ import { RiAlarmWarningLine, RiCloseCircleLine } from 'react-icons/ri';
 const ExpiringCertificationsPage = () => {
     const { getExpiringCerts } = useData();
     const [filter, setFilter] = useState('all');
+    const [certs, setCerts] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const certs = getExpiringCerts(filter === 'all' ? null : filter);
+    useEffect(() => {
+        const fetchCerts = async () => {
+            try {
+                const result = await getExpiringCerts(filter === 'all' ? null : filter);
+                setCerts(result || []);
+            } catch (err) {
+                console.error('Failed to fetch expiring certs:', err);
+                setCerts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCerts();
+    }, [getExpiringCerts, filter]);
+
+    if (loading) {
+        return <div className="page-title">⏳ Loading...</div>;
+    }
+
+    // Calculate counts for summary boxes
+    const expiring30Count = certs.filter(c => getDaysUntilExpiry(c.expiryDate) <= 30 && getDaysUntilExpiry(c.expiryDate) > 0).length;
+    const expiredCount = certs.filter(c => getDaysUntilExpiry(c.expiryDate) <= 0).length;
 
     return (
         <div className="fade-up">
@@ -22,8 +45,8 @@ const ExpiringCertificationsPage = () => {
             {/* Summary boxes */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
                 {[
-                    { label: 'Expiring in 30 Days', count: getExpiringCerts('30days').length, color: '#f59e0b', icon: <RiAlarmWarningLine />, key: '30days' },
-                    { label: 'Already Expired', count: getExpiringCerts('expired').length, color: '#ef4444', icon: <RiCloseCircleLine />, key: 'expired' },
+                    { label: 'Expiring in 30 Days', count: expiring30Count, color: '#f59e0b', icon: <RiAlarmWarningLine />, key: '30days' },
+                    { label: 'Already Expired', count: expiredCount, color: '#ef4444', icon: <RiCloseCircleLine />, key: 'expired' },
                 ].map(s => (
                     <div key={s.key} onClick={() => setFilter(filter === s.key ? 'all' : s.key)}
                         style={{

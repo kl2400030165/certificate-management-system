@@ -5,6 +5,8 @@ import StatusBadge from '../components/StatusBadge';
 import { formatDate, getDaysUntilExpiry } from '../utils/certUtils';
 import { RiAddCircleLine, RiSearchLine, RiEyeLine, RiDownloadLine } from 'react-icons/ri';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 const MyCertificationsPage = () => {
     const { getMyCerts } = useData();
     const [search, setSearch] = useState('');
@@ -74,7 +76,7 @@ const MyCertificationsPage = () => {
                             {filtered.map((cert, idx) => {
                                 const days = getDaysUntilExpiry(cert.expiryDate);
                                 return (
-                                    <tr key={cert.certId}>
+                                    <tr key={cert.id}>
                                         <td style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1}</td>
                                         <td><div className="cert-name-cell">{cert.certName}</div></td>
                                         <td><div className="issuer-cell">{cert.issuedBy}</div></td>
@@ -88,11 +90,11 @@ const MyCertificationsPage = () => {
                                         <td><StatusBadge status={cert.status} /></td>
                                         <td>
                                             <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link to={`/certificate/${cert.certId}`} className="btn-icon" title="View">
+                                                <Link to={`/certificate/${cert.id}`} className="btn-icon" title="View">
                                                     <RiEyeLine />
                                                 </Link>
-                                                {cert.fileData && (
-                                                    <a href={cert.fileData} download={cert.fileName} className="btn-icon" title="Download">
+                                                {cert.fileUrl && (
+                                                    <a href={`${API_URL}${cert.fileUrl}`} download={cert.fileName} className="btn-icon" title="Download" target="_blank" rel="noreferrer">
                                                         <RiDownloadLine />
                                                     </a>
                                                 )}

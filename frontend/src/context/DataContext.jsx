@@ -1,112 +1,134 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import api from '../utils/api';
 import { getCertStatus } from '../utils/certUtils';
 
 const DataContext = createContext(null);
 export const useData = () => useContext(DataContext);
 
-const SEED_CERTS = [
-    {
-        certId: 'c1', userId: 'u1', certName: 'AWS Solutions Architect', issuedBy: 'Amazon Web Services',
-        issueDate: '2023-06-01', expiryDate: '2024-06-01', fileName: null, fileData: null,
-    },
-    {
-        certId: 'c2', userId: 'u1', certName: 'PMP Certification', issuedBy: 'PMI',
-        issueDate: '2024-01-15', expiryDate: '2026-04-01', fileName: null, fileData: null,
-    },
-    {
-        certId: 'c3', userId: 'u2', certName: 'Google Cloud Professional', issuedBy: 'Google',
-        issueDate: '2024-03-01', expiryDate: '2026-03-15', fileName: null, fileData: null,
-    },
-    {
-        certId: 'c4', userId: 'u2', certName: 'Scrum Master CSM', issuedBy: 'Scrum Alliance',
-        issueDate: '2023-11-01', expiryDate: '2025-11-01', fileName: null, fileData: null,
-    },
-    {
-        certId: 'c5', userId: 'u1', certName: 'Azure Administrator', issuedBy: 'Microsoft',
-        issueDate: '2024-05-01', expiryDate: '2026-05-01', fileName: null, fileData: null,
-    },
-];
-
-const SEED_USERS = [
-    { userId: 'u1', name: 'Rahul Sharma', email: 'rahul@example.com', password: 'rahul123', role: 'user' },
-    { userId: 'u2', name: 'Priya Patel', email: 'priya@example.com', password: 'priya123', role: 'user' },
-];
-
 export const DataProvider = ({ children }) => {
     const { user } = useAuth();
     const [certs, setCerts] = useState([]);
-    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(false);
 
+    // Fetch user's certs when user logs in
     useEffect(() => {
-        // Seed users if none exist
-        const storedUsers = JSON.parse(localStorage.getItem('certUsers') || '[]');
-        if (storedUsers.length === 0) {
-            localStorage.setItem('certUsers', JSON.stringify(SEED_USERS));
-            setUsers(SEED_USERS);
+        if (user) {
+            fetchMyCerts();
         } else {
-            setUsers(storedUsers);
+            setCerts([]);
         }
-        // Seed certs if none exist
-        const storedCerts = JSON.parse(localStorage.getItem('certCerts') || '[]');
-        if (storedCerts.length === 0) {
-            localStorage.setItem('certCerts', JSON.stringify(SEED_CERTS));
-            setCerts(SEED_CERTS);
-        } else {
-            setCerts(storedCerts);
+    }, [user]);
+
+    const fetchMyCerts = async () => {
+        if (!user) return;
+        setLoading(true);
+        try {
+            const res = await api.get('/api/certs');
+            setCerts(res.data);
+        } catch (err) {
+            console.error('Failed to fetch certs:', err);
+        } finally {
+            setLoading(false);
         }
-    }, []);
-
-    const saveCerts = (updated) => {
-        setCerts(updated);
-        localStorage.setItem('certCerts', JSON.stringify(updated));
     };
 
-    const addCertification = (cert) => {
-        const newCert = { ...cert, certId: Date.now().toString(), userId: user.userId };
-        const updated = [...certs, newCert];
-        saveCerts(updated);
-        return newCert;
-    };
+    const getMyCerts = () => certs;
 
-    const getMyCerts = () => {
-        return certs
-            .filter(c => c.userId === user?.userId)
-            .map(c => ({ ...c, status: getCertStatus(c.expiryDate) }));
-    };
+    const addCertification = async (certData) => {
+        const formData = new FormData();
+        formData.append('certName', certData.certName);
+        formData.append('issuedBy', certData.issuedBy);
+        formData.append('issueDate', certData.issueDate);
+        formData.append('expiryDate', certData.expiryDate);
+        if (certData.file) formData.append('file', certData.file);
 
-    const getAllCerts = () => {
-        const allUsers = JSON.parse(localStorage.getItem('certUsers') || '[]');
-        return certs.map(c => {
-            const owner = allUsers.find(u => u.userId === c.userId);
-            return { ...c, status: getCertStatus(c.expiryDate), userName: owner?.name || 'Unknown' };
+        const res = await api.post('/api/certs', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
         });
+        setCerts(prev => [...prev, res.data]);
+        return res.data;
     };
 
-    const getExpiringCerts = (filter) => {
-        const all = getAllCerts();
-        if (filter === 'expired') return all.filter(c => c.status === 'EXPIRED');
-        if (filter === '30days') return all.filter(c => c.status === 'EXPIRING SOON');
-        return all.filter(c => c.status !== 'ACTIVE');
+    const updateCertification = async (certId, certData) => {
+        const res = await api.put(`/api/certs/${certId}`, certData);
+        setCerts(prev => prev.map(c => c.id === certId ? res.data : c));
+        return res.data;
     };
 
-    const updateCertStatus = (certId, renewalStatus) => {
-        const updated = certs.map(c => c.certId === certId ? { ...c, renewalStatus } : c);
-        saveCerts(updated);
+    const deleteCertification = async (certId) => {
+        await api.delete(`/api/certs/${certId}`);
+        setCerts(prev => prev.filter(c => c.id !== certId));
     };
 
-    const getCertById = (certId) => {
-        const c = certs.find(c => c.certId === certId);
-        if (!c) return null;
-        return { ...c, status: getCertStatus(c.expiryDate) };
+    const getCertById = async (certId) => {
+        const res = await api.get(`/api/certs/${certId}`);
+        return res.data;
     };
 
-    const allUsers = JSON.parse(localStorage.getItem('certUsers') || '[]');
+    // Admin functions
+    const getAllCerts = async () => {
+        const res = await api.get('/api/admin/certs');
+        return res.data;
+    };
+
+    const getExpiringCerts = async (filter) => {
+        const params = filter ? `?filter=${filter}` : '';
+        const res = await api.get(`/api/admin/certs/expiring${params}`);
+        return res.data;
+    };
+
+    const getStats = async () => {
+        const res = await api.get('/api/admin/stats');
+        return res.data;
+    };
+
+    const updateCertStatus = async (certId) => {
+        const res = await api.put(`/api/admin/certs/${certId}/renew`);
+        return res.data;
+    };
+
+    const notifyUser = async (certId) => {
+        const res = await api.post(`/api/admin/certs/${certId}/notify`);
+        return res.data;
+    };
+
+    const updateReminderPreference = async (certId, disabled) => {
+        const res = await api.put(`/api/certs/${certId}/reminders?disabled=${disabled}`);
+        setCerts(prev => prev.map(c => (c.id === certId || c.certId === certId) ? res.data : c));
+        return res.data;
+    };
+
+    const runDailyReminders = async () => {
+        const res = await api.post('/api/admin/reminders/run-daily');
+        return res.data;
+    };
+
+    const runWeeklyDigest = async () => {
+        const res = await api.post('/api/admin/reminders/run-weekly');
+        return res.data;
+    };
+
+    const getReminderJobLogs = async () => {
+        const res = await api.get('/api/admin/reminders/logs');
+        return res.data;
+    };
+
+    const clearReminderJobLogs = async () => {
+        const res = await api.delete('/api/admin/reminders/logs');
+        return res.data;
+    };
 
     return (
         <DataContext.Provider value={{
-            certs, users: allUsers, addCertification, getMyCerts,
-            getAllCerts, getExpiringCerts, updateCertStatus, getCertById
+            certs, loading,
+            getMyCerts, addCertification, updateCertification,
+            deleteCertification, getCertById,
+            getAllCerts, getExpiringCerts, getStats,
+            updateCertStatus, notifyUser, updateReminderPreference,
+            runDailyReminders, runWeeklyDigest,
+            getReminderJobLogs, clearReminderJobLogs,
+            refreshCerts: fetchMyCerts,
         }}>
             {children}
         </DataContext.Provider>

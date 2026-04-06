@@ -1,15 +1,23 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
     RiDashboardLine, RiAwardLine, RiAddCircleLine,
-    RiUserLine, RiShieldLine, RiFileList3Line,
-    RiAlarmWarningLine, RiRefreshLine, RiLogoutBoxLine
+    RiFileList3Line, RiUserLine, RiRoadMapLine,
+    RiAlarmWarningLine, RiRefreshLine, RiLogoutBoxLine,
+    RiMoonLine, RiSunLine, RiBellLine, RiCalendarLine,
+    RiShieldCheckLine
 } from 'react-icons/ri';
 
 const userNav = [
     { to: '/dashboard', icon: <RiDashboardLine />, label: 'Dashboard' },
     { to: '/certifications', icon: <RiAwardLine />, label: 'My Certifications' },
     { to: '/add-certification', icon: <RiAddCircleLine />, label: 'Add Certification' },
+    { to: '/career-impact', icon: <RiShieldCheckLine />, label: 'Career Impact' },
+    { to: '/roadmap', icon: <RiRoadMapLine />, label: 'Cert Roadmap' },
+    { to: '/calendar', icon: <RiCalendarLine />, label: 'Calendar View' },
+    { to: '/notifications', icon: <RiBellLine />, label: 'Notifications' },
+    { to: '/profile', icon: <RiUserLine />, label: 'My Profile' },
 ];
 
 const adminNav = [
@@ -21,6 +29,7 @@ const adminNav = [
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
+    const { isDark, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -65,6 +74,15 @@ const Sidebar = () => {
             </nav>
 
             <div className="sidebar-footer">
+                                <button 
+                                    className="nav-item" 
+                                    onClick={toggleTheme}
+                                    style={{ opacity: 0.7 }}
+                                    title={isDark ? 'Light Mode' : 'Dark Mode'}
+                                >
+                                    <span className="nav-icon">{isDark ? <RiSunLine /> : <RiMoonLine />}</span>
+                                    {isDark ? 'Light' : 'Dark'}
+                                </button>
                 <button className="nav-item" onClick={handleLogout} style={{ color: '#ef4444' }}>
                     <span className="nav-icon"><RiLogoutBoxLine /></span>
                     Logout

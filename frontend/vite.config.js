@@ -6,5 +6,10 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: false
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    globals: false
   }
 })

@@ -1,0 +1,251 @@
+.calendar-page .page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-grid-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.glass-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(2, 8, 23, 0.05);
+}
+
+.calendar-panel {
+  padding: 16px;
+}
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendar-toolbar h2 {
+  font-size: 18px;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.btn-nav {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-weekdays,
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-weekdays {
+  margin-bottom: 8px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 6px 0;
+}
+
+.calendar-cell {
+  min-height: 72px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.calendar-cell.empty {
+  border: none;
+  background: transparent;
+}
+
+.calendar-cell.day {
+  text-align: left;
+  padding: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.calendar-cell.day:hover {
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.calendar-cell.today {
+  outline: 2px solid rgba(14, 165, 233, 0.35);
+}
+
+.calendar-cell.selected {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.day-number {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.day-markers {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.marker {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.more-marker {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.status-active {
+  background: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.status-expiring {
+  background: var(--accent-orange);
+  color: var(--accent-orange);
+}
+
+.status-expired {
+  background: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.calendar-details {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 520px;
+}
+
+.details-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  margin: 0 0 4px;
+  color: var(--text-primary);
+}
+
+.details-header span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.expiry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expiry-card {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  padding: 12px;
+}
+
+.expiry-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.expiry-card h4 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.status-chip {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.issuer,
+.expiry-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 6px 0 0;
+}
+
+.days-left {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 8px 0 0;
+}
+
+.calendar-empty {
+  margin: auto 0;
+}
+
+.legend {
+  margin-top: auto;
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.legend div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 1024px) {
+  .calendar-grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-details {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .calendar-cell {
+    min-height: 58px;
+  }
+
+  .day-number {
+    font-size: 12px;
+  }
+
+  .calendar-toolbar h2 {
+    font-size: 16px;
+  }
+
+  .legend {
+    flex-direction: column;
+    gap: 6px;
+  }
+}

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import StatsCard from '../components/StatsCard';
 import StatusBadge from '../components/StatusBadge';
+import CertificationRoadmap from '../components/CertificationRoadmap';
 import { formatDate, getDaysUntilExpiry } from '../utils/certUtils';
 import {
     RiAwardLine, RiCheckLine, RiAlarmWarningLine,
@@ -64,6 +65,8 @@ const UserDashboard = () => {
                 </div>
             )}
 
+            <CertificationRoadmap />
+
             <div className="section-title">Recent Certifications</div>
 
             {recent.length === 0 ? (
@@ -93,7 +96,7 @@ const UserDashboard = () => {
                             {recent.map(cert => {
                                 const days = getDaysUntilExpiry(cert.expiryDate);
                                 return (
-                                    <tr key={cert.certId}>
+                                    <tr key={cert.id}>
                                         <td><div className="cert-name-cell">{cert.certName}</div></td>
                                         <td><div className="issuer-cell">{cert.issuedBy}</div></td>
                                         <td>{formatDate(cert.issueDate)}</td>
@@ -105,7 +108,7 @@ const UserDashboard = () => {
                                         </td>
                                         <td><StatusBadge status={cert.status} /></td>
                                         <td>
-                                            <Link to={`/certificate/${cert.certId}`} className="btn-icon" title="View">👁</Link>
+                                            <Link to={`/certificate/${cert.id}`} className="btn-icon" title="View">👁</Link>
                                         </td>
                                     </tr>
                                 );

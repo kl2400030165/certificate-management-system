@@ -31,7 +31,7 @@ const AddCertificationPage = () => {
         if (f) handleFile(f);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         if (new Date(form.expiryDate) <= new Date(form.issueDate)) {
@@ -40,19 +40,18 @@ const AddCertificationPage = () => {
         }
         setLoading(true);
 
-        const reader = new FileReader();
-        const saveAndRedirect = (fileData, fileName) => {
-            addCertification({ ...form, fileData, fileName });
+        const saveAndRedirect = async () => {
+            await addCertification({ ...form, file });
             setSuccess(true);
             setTimeout(() => navigate('/certifications'), 1500);
-            setLoading(false);
         };
 
-        if (file) {
-            reader.onload = (e) => saveAndRedirect(e.target.result, file.name);
-            reader.readAsDataURL(file);
-        } else {
-            saveAndRedirect(null, null);
+        try {
+            await saveAndRedirect();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to save certification');
+        } finally {
+            setLoading(false);
         }
     };
 

@@ -1,31 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import StatusBadge from '../../components/StatusBadge';
 import { formatDate, getDaysUntilExpiry } from '../../utils/certUtils';
 import { RiCheckLine, RiNotification3Line, RiRefreshLine } from 'react-icons/ri';
 
 const RenewalManagementPage = () => {
-    const { getExpiringCerts, updateCertStatus } = useData();
+    const { getExpiringCerts, updateCertStatus, notifyUser } = useData();
     const [notifications, setNotifications] = useState({});
     const [approvals, setApprovals] = useState({});
     const [toast, setToast] = useState(null);
+    const [certs, setCerts] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const certs = getExpiringCerts(null);
+    useEffect(() => {
+        const fetchCerts = async () => {
+            try {
+                const result = await getExpiringCerts(null);
+                setCerts(result || []);
+            } catch (err) {
+                console.error('Failed to fetch expiring certs:', err);
+                setCerts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCerts();
+    }, [getExpiringCerts]);
+
+    if (loading) {
+        return <div className="page-title">⏳ Loading...</div>;
+    }
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 3000);
     };
 
-    const handleApprove = (certId, certName) => {
-        updateCertStatus(certId, 'APPROVED');
-        setApprovals(prev => ({ ...prev, [certId]: true }));
-        showToast(`✓ Renewal approved for "${certName}"`);
+    const handleApprove = async (certId, certName) => {
+        try {
+            await updateCertStatus(certId);
+            setApprovals(prev => ({ ...prev, [certId]: true }));
+            showToast(`✓ Renewal approved for "${certName}"`);
+        } catch (err) {
+            console.error('Failed to approve:', err);
+            showToast('Failed to approve renewal', 'error');
+        }
     };
 
-    const handleNotify = (certId, userName) => {
-        setNotifications(prev => ({ ...prev, [certId]: true }));
-        showToast(`📧 Notification sent to ${userName}`);
+    const handleNotify = async (certId, userName) => {
+        try {
+            await notifyUser(certId);
+            setNotifications(prev => ({ ...prev, [certId]: true }));
+            showToast(`📧 Notification sent to ${userName}`);
+        } catch (err) {
+            console.error('Failed to notify user:', err);
+            showToast('Failed to send notification', 'error');
+        }
     };
 
     return (

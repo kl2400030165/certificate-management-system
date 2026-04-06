@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 import { RiUserLine, RiMailLine, RiLockLine, RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 
 const RegisterPage = () => {
@@ -9,27 +9,38 @@ const RegisterPage = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
-    const { register } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
         if (form.password !== form.confirm) { setError('Passwords do not match'); return; }
         if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
+
         setLoading(true);
-        setTimeout(() => {
-            const result = register(form.name, form.email, form.password);
-            if (result.success) {
-                setSuccess('Account created! Redirecting to login...');
-                setTimeout(() => navigate('/login'), 1500);
-            } else {
-                setError(result.message);
+        try {
+            await api.post('/api/auth/register', {
+                name: form.name,
+                email: form.email,
+                password: form.password,
+            });
+            setSuccess('Account created! Check your email for the verification code…');
+            sessionStorage.setItem('certifyOtpFlow', 'register');
+            setTimeout(() => navigate(`/verify-otp?email=${encodeURIComponent(form.email)}`), 1200);
+        } catch (err) {
+            const data = err.response?.data;
+            let msg = data?.message;
+            if (!msg && data && typeof data === 'object') {
+                const parts = Object.values(data).filter(v => typeof v === 'string');
+                if (parts.length) msg = parts.join(' ');
             }
+            setError(msg || err.message || 'Failed to create account');
+        } finally {
             setLoading(false);
-        }, 600);
+        }
     };
 
     return (
@@ -88,9 +99,20 @@ const RegisterPage = () => {
                         </div>
                     </div>
 
+                    {/* Email OTP notice */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
+                        borderRadius: 8, padding: '10px 14px', margin: '4px 0 12px', fontSize: 13,
+                        color: 'var(--text-muted)'
+                    }}>
+                        <span style={{ fontSize: 16 }}>📧</span>
+                        <span>A 6-digit verification code will be emailed to you after registration.</span>
+                    </div>
+
                     <button type="submit" className="btn-primary-custom w-100" disabled={loading}
-                        style={{ justifyContent: 'center', padding: '13px', marginTop: 8 }}>
-                        {loading ? '⏳ Creating...' : '🚀 Create Account'}
+                        style={{ justifyContent: 'center', padding: '13px', marginTop: 4 }}>
+                        {loading ? '⏳ Creating…' : '🚀 Create Account'}
                     </button>
                 </form>
 

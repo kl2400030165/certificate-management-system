@@ -3,14 +3,75 @@ import StatsCard from '../../components/StatsCard';
 import StatusBadge from '../../components/StatusBadge';
 import { formatDate } from '../../utils/certUtils';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import {
     RiGroupLine, RiAwardLine, RiAlarmWarningLine,
-    RiCloseCircleLine, RiArrowRightLine
+    RiCloseCircleLine, RiArrowRightLine, RiRefreshLine
 } from 'react-icons/ri';
 
 const AdminDashboard = () => {
-    const { getAllCerts } = useData();
-    const allCerts = getAllCerts();
+    const {
+        getAllCerts,
+        runDailyReminders,
+        runWeeklyDigest,
+        getReminderJobLogs,
+        clearReminderJobLogs,
+    } = useData();
+    const [allCerts, setAllCerts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [jobRunning, setJobRunning] = useState('');
+    const [jobMessage, setJobMessage] = useState('');
+    const [jobLogs, setJobLogs] = useState([]);
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const logs = await getReminderJobLogs();
+                setJobLogs(Array.isArray(logs) ? logs : []);
+            } catch (err) {
+                console.error('Failed to fetch reminder logs:', err);
+                setJobLogs([]);
+            }
+        };
+        fetchLogs();
+    }, [getReminderJobLogs]);
+
+    const refreshLogs = async () => {
+        try {
+            const logs = await getReminderJobLogs();
+            setJobLogs(Array.isArray(logs) ? logs : []);
+        } catch (err) {
+            console.error('Failed to refresh reminder logs:', err);
+        }
+    };
+
+    const clearJobLogs = async () => {
+        try {
+            await clearReminderJobLogs();
+            setJobLogs([]);
+        } catch (err) {
+            console.error('Failed to clear reminder logs:', err);
+        }
+    };
+
+    useEffect(() => {
+        const fetchCerts = async () => {
+            try {
+                const certs = await getAllCerts();
+                setAllCerts(certs || []);
+            } catch (err) {
+                console.error('Failed to fetch admin certs:', err);
+                setAllCerts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCerts();
+    }, [getAllCerts]);
+
+    if (loading) {
+        return <div className="page-title">⏳ Loading...</div>;
+    }
 
     const totalUsers = [...new Set(allCerts.map(c => c.userId))].length;
     const totalCerts = allCerts.length;
@@ -18,6 +79,42 @@ const AdminDashboard = () => {
     const expired = allCerts.filter(c => c.status === 'EXPIRED').length;
 
     const recentExpiring = allCerts.filter(c => c.status !== 'ACTIVE').slice(0, 6);
+
+    const handleRunDaily = async () => {
+        setJobRunning('daily');
+        setJobMessage('');
+        try {
+            const result = await runDailyReminders();
+            const msg = 'Daily reminder job executed successfully.';
+            setJobMessage(result?.message || msg);
+            await refreshLogs();
+        } catch (err) {
+            console.error('Failed to run daily reminders:', err);
+            const msg = 'Failed to run daily reminder job.';
+            setJobMessage(msg);
+            await refreshLogs();
+        } finally {
+            setJobRunning('');
+        }
+    };
+
+    const handleRunWeekly = async () => {
+        setJobRunning('weekly');
+        setJobMessage('');
+        try {
+            const result = await runWeeklyDigest();
+            const msg = 'Weekly digest job executed successfully.';
+            setJobMessage(result?.message || msg);
+            await refreshLogs();
+        } catch (err) {
+            console.error('Failed to run weekly digest:', err);
+            const msg = 'Failed to run weekly digest job.';
+            setJobMessage(msg);
+            await refreshLogs();
+        } finally {
+            setJobRunning('');
+        }
+    };
 
     return (
         <div className="fade-up">
@@ -59,6 +156,91 @@ const AdminDashboard = () => {
                     </Link>
                 </div>
             )}
+
+            <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px 20px',
+                marginBottom: 24,
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <RiRefreshLine />
+                    <strong>Reminder Jobs</strong>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>(Manual trigger for testing)</span>
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                        className="btn-primary-custom"
+                        onClick={handleRunDaily}
+                        disabled={jobRunning !== ''}
+                        style={{ opacity: jobRunning && jobRunning !== 'daily' ? 0.6 : 1 }}
+                    >
+                        {jobRunning === 'daily' ? 'Running Daily...' : 'Run Daily Reminders'}
+                    </button>
+                    <button
+                        className="btn-secondary-custom"
+                        onClick={handleRunWeekly}
+                        disabled={jobRunning !== ''}
+                        style={{ opacity: jobRunning && jobRunning !== 'weekly' ? 0.6 : 1 }}
+                    >
+                        {jobRunning === 'weekly' ? 'Running Weekly...' : 'Run Weekly Digest'}
+                    </button>
+                </div>
+                {jobMessage && (
+                    <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-secondary)' }}>
+                        {jobMessage}
+                    </div>
+                )}
+
+                <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <strong style={{ fontSize: 13 }}>Last 10 Runs</strong>
+                        <button
+                            className="btn-icon"
+                            onClick={clearJobLogs}
+                            title="Clear logs"
+                            disabled={jobLogs.length === 0}
+                            style={{ opacity: jobLogs.length === 0 ? 0.45 : 1 }}
+                        >
+                            🗑
+                        </button>
+                    </div>
+
+                    {jobLogs.length === 0 ? (
+                        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>No executions yet.</div>
+                    ) : (
+                        <div style={{ display: 'grid', gap: 8 }}>
+                            {jobLogs.map((log) => (
+                                <div
+                                    key={log.id}
+                                    style={{
+                                        border: '1px solid var(--border)',
+                                        borderRadius: 8,
+                                        padding: '8px 10px',
+                                        background: 'var(--bg-secondary)',
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                        <span style={{ fontSize: 12, fontWeight: 700 }}>{log.jobType || log.type}</span>
+                                        <span style={{
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            color: (log.status || '').toUpperCase() === 'SUCCESS' ? 'var(--accent-green)' : 'var(--accent-red)',
+                                        }}>
+                                            {log.status}
+                                        </span>
+                                    </div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{log.message}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                                        {new Date(log.createdAt).toLocaleString()}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 {/* Attention Needed */}

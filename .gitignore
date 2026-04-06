@@ -38,3 +38,17 @@ coverage/
 
 # Misc
 .cache/
+
+# Backend
+backend/target/
+backend/uploads/
+backend/src/main/resources/application-local.properties
+backend/.classpath
+backend/.factorypath
+backend/.project
+backend/.settings/
+backend/dep-list.txt
+backend/effective-pom
+
+# Frontend build (if run from repo root)
+frontend/dist/
