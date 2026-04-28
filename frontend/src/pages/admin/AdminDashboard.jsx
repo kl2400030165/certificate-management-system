@@ -255,7 +255,7 @@ const AdminDashboard = () => {
                                 {recentExpiring.length === 0 ? (
                                     <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 30 }}>All certifications are active ✓</td></tr>
                                 ) : recentExpiring.map(c => (
-                                    <tr key={c.certId}>
+                                    <tr key={c.id || c.certId}>
                                         <td style={{ fontWeight: 600, fontSize: 13 }}>{c.userName}</td>
                                         <td style={{ fontSize: 13 }}>{c.certName}</td>
                                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(c.expiryDate)}</td>

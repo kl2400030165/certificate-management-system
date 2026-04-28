@@ -8,6 +8,7 @@ import com.certifypro.backend.repository.UserRepository;
 import com.certifypro.backend.security.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.Locale;
 
 @Service
 public class AuthService {
@@ -27,15 +28,15 @@ public class AuthService {
         this.otpService = otpService;
     }
 
-    /** Step 1 of register — creates user, sends verification OTP. No JWT returned yet. */
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new IllegalArgumentException("Email already registered");
         }
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(User.Role.USER)
                 .emailVerified(false)
@@ -44,52 +45,45 @@ public class AuthService {
         userRepository.save(user);
         otpService.generateAndSend(user);
 
-        return AuthResponse.builder()
-                .userId(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole().name().toLowerCase())
-                .emailVerified(false)
-                .notificationsEnabled(user.isNotificationsEnabled())
-                .notificationFrequency(user.getNotificationFrequency().name().toLowerCase())
-                .build();
+        return buildAuthResponse(null, user);
     }
 
-    /**
-     * Step 1 of login — validates credentials, sends login OTP to verified users.
-     * Returns { step="otp_sent" } — no JWT yet.
-     */
+    public AuthResponse login(LoginRequest request) {
+        return loginInitiate(request);
+    }
+
     public AuthResponse loginInitiate(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        if (!passwordMatchesOrLegacyUpgrade(user, request.getPassword())) {
             throw new IllegalArgumentException("Invalid email or password");
         }
 
-        if (!user.isEmailVerified()) {
-            // Resend email verification OTP and tell frontend
-            otpService.generateAndSend(user);
-            throw new IllegalArgumentException("EMAIL_NOT_VERIFIED");
+        if (user.isEmailVerified()) {
+            otpService.sendLoginOtp(user);
+            return buildAuthResponse(null, user);
         }
 
-        // Credentials OK — send login OTP
-        otpService.sendLoginOtp(user);
-
-        return AuthResponse.builder()
-                .email(user.getEmail())
-                .name(user.getName())
-                .emailVerified(true)
-                .build();
+        otpService.generateAndSend(user);
+        throw new IllegalArgumentException("EMAIL_NOT_VERIFIED");
     }
 
-    /**
-     * Step 2 of login — verifies login OTP, returns JWT.
-     */
-    public AuthResponse loginComplete(String email, String otp) {
-        User user = otpService.verifyLoginOtp(email, otp);
+    public AuthResponse loginComplete(String email, String code) {
+        User user = otpService.verifyLoginOtp(normalizeEmail(email), code);
         String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
         return buildAuthResponse(token, user);
+    }
+
+    public AuthResponse verifyOtp(String email, String code) {
+        User user = otpService.verifyRegistrationOrLoginOtp(normalizeEmail(email), code);
+        String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
+        return buildAuthResponse(token, user);
+    }
+
+    public void resendOtp(String email) {
+        otpService.resendOtpSmart(normalizeEmail(email));
     }
 
     public AuthResponse getMe(String userId) {
@@ -103,7 +97,9 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (enabled != null) user.setNotificationsEnabled(enabled);
+        if (enabled != null) {
+            user.setNotificationsEnabled(enabled);
+        }
 
         if (frequency != null && !frequency.isBlank()) {
             try {
@@ -126,9 +122,37 @@ public class AuthService {
                 .name(user.getName())
                 .email(user.getEmail())
                 .role(user.getRole().name().toLowerCase())
-                .emailVerified(user.isEmailVerified())
+            .emailVerified(user.isEmailVerified())
                 .notificationsEnabled(user.isNotificationsEnabled())
                 .notificationFrequency(user.getNotificationFrequency().name().toLowerCase())
                 .build();
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean passwordMatchesOrLegacyUpgrade(User user, String rawPassword) {
+        String stored = user.getPasswordHash();
+        if (stored == null || stored.isBlank() || rawPassword == null) {
+            return false;
+        }
+
+        if (passwordEncoder.matches(rawPassword, stored)) {
+            return true;
+        }
+
+        // Backward compatibility: migrate any legacy plain-text password on first successful login.
+        boolean looksBcrypt = stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$");
+        if (!looksBcrypt && stored.equals(rawPassword)) {
+            user.setPasswordHash(passwordEncoder.encode(rawPassword));
+            userRepository.save(user);
+            return true;
+        }
+
+        return false;
     }
 }

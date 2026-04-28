@@ -32,6 +32,15 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAllCerts());
     }
 
+    @GetMapping("/certs/{id}")
+    public ResponseEntity<?> getCertById(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(adminService.getCertById(id));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/certs/expiring")
     public ResponseEntity<List<CertResponse>> getExpiringCerts(
             @RequestParam(required = false) String filter) {

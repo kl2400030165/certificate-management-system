@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { RiShieldCheckLine, RiLockLine, RiErrorWarningLine, RiCheckboxCircleLine } from 'react-icons/ri';
 
 const RESEND_COOLDOWN = 60; // seconds
 
@@ -64,7 +65,7 @@ const VerifyOtpPage = () => {
             const { data } = await api.post('/api/auth/verify-otp', { email, otp: code });
             sessionStorage.removeItem('certifyOtpFlow');
             updateUser(data);
-            setSuccess(isLoginMode ? 'Verified! Taking you to your dashboard…' : 'Email verified! Taking you to your dashboard…');
+            setSuccess(isLoginMode ? 'Verified! Taking you to your dashboard...' : 'Email verified! Taking you to your dashboard...');
             const target = data.role === 'admin' ? '/admin/dashboard' : '/dashboard';
             setTimeout(() => navigate(target, { replace: true }), 600);
         } catch (err) {
@@ -99,18 +100,19 @@ const VerifyOtpPage = () => {
             <div className="auth-card fade-up" style={{ maxWidth: 440 }}>
                 {/* Logo */}
                 <div className="auth-logo">
-                    <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#4f8ef7,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🎓</div>
-                    <span style={{ fontSize: 22, fontWeight: 800, background: 'linear-gradient(135deg,#4f8ef7,#8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>CertifyPro</span>
+                    <div className="brand-icon" style={{ width: 48, height: 48, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}><RiShieldCheckLine /></div>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>CertifyPro</span>
                 </div>
 
                 {/* Shield icon */}
                 <div style={{ textAlign: 'center', marginBottom: 8 }}>
                     <div style={{
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        width: 64, height: 64, borderRadius: '50%',
-                        background: 'linear-gradient(135deg, rgba(79,142,247,0.15), rgba(139,92,246,0.15))',
-                        border: '2px solid rgba(79,142,247,0.3)', fontSize: 28, margin: '0 auto 12px'
-                    }}>🔐</div>
+                        width: 60, height: 60, borderRadius: 8,
+                        background: 'linear-gradient(135deg, rgba(37,99,235,0.12), rgba(13,148,136,0.12))',
+                        border: '1px solid rgba(37,99,235,0.24)', fontSize: 28, margin: '0 auto 12px',
+                        color: 'var(--accent-primary)'
+                    }}><RiLockLine /></div>
                 </div>
 
                 <h2 className="auth-title" style={{ marginTop: 0 }}>
@@ -121,12 +123,12 @@ const VerifyOtpPage = () => {
                         ? 'Enter the login OTP we sent to'
                         : 'We sent a 6-digit verification code to'}
                 </p>
-                <p style={{ textAlign: 'center', fontWeight: 700, color: 'var(--primary)', fontSize: 14, marginBottom: 24, wordBreak: 'break-all' }}>
+                <p style={{ textAlign: 'center', fontWeight: 700, color: 'var(--accent-primary)', fontSize: 14, marginBottom: 24, wordBreak: 'break-all' }}>
                     {email || 'your email'}
                 </p>
 
-                {error && <div className="auth-error" style={{ marginBottom: 16 }}>⚠ {error}</div>}
-                {success && <div className="auth-success" style={{ marginBottom: 16 }}>✓ {success}</div>}
+                {error && <div className="auth-error" style={{ marginBottom: 16 }}><RiErrorWarningLine /> {error}</div>}
+                {success && <div className="auth-success" style={{ marginBottom: 16 }}><RiCheckboxCircleLine /> {success}</div>}
 
                 <form onSubmit={handleSubmit}>
                     {/* 6-digit OTP boxes */}
@@ -145,14 +147,14 @@ const VerifyOtpPage = () => {
                                     width: 52, height: 60,
                                     textAlign: 'center',
                                     fontSize: 26, fontWeight: 700,
-                                    borderRadius: 12,
-                                    border: `2px solid ${digit ? 'var(--primary)' : 'var(--border)'}`,
-                                    background: 'var(--surface-2)',
-                                    color: 'var(--text)',
+                                    borderRadius: 8,
+                                    border: `2px solid ${digit ? 'var(--accent-primary)' : 'var(--border)'}`,
+                                    background: 'var(--bg-elevated)',
+                                    color: 'var(--text-primary)',
                                     outline: 'none',
                                     transition: 'border-color 0.2s, box-shadow 0.2s',
-                                    boxShadow: digit ? '0 0 0 3px rgba(79,142,247,0.2)' : 'none',
-                                    caretColor: 'var(--primary)',
+                                    boxShadow: digit ? '0 0 0 3px rgba(37,99,235,0.16)' : 'none',
+                                    caretColor: 'var(--accent-primary)',
                                 }}
                                 onFocus={e => e.target.select()}
                                 autoFocus={i === 0}
@@ -162,7 +164,7 @@ const VerifyOtpPage = () => {
 
                     <button type="submit" className="btn-primary-custom w-100" disabled={loading}
                         style={{ justifyContent: 'center', padding: '13px', marginBottom: 16 }}>
-                        {loading ? '⏳ Verifying…' : '✅ Verify & Continue'}
+                        {loading ? 'Verifying...' : 'Verify & Continue'}
                     </button>
                 </form>
 
@@ -170,17 +172,17 @@ const VerifyOtpPage = () => {
                 <div style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)' }}>
                     Didn't receive it?{' '}
                     {resendCountdown > 0 ? (
-                        <span>Resend in <strong style={{ color: 'var(--primary)' }}>{resendCountdown}s</strong></span>
+                        <span>Resend in <strong style={{ color: 'var(--accent-primary)' }}>{resendCountdown}s</strong></span>
                     ) : (
                         <button onClick={handleResend} disabled={resending}
-                            style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: 14, padding: 0 }}>
-                            {resending ? 'Sending…' : 'Resend code'}
+                            style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: 600, fontSize: 14, padding: 0 }}>
+                            {resending ? 'Sending...' : 'Resend code'}
                         </button>
                     )}
                 </div>
 
                 <div className="auth-link" style={{ marginTop: 20 }}>
-                    <Link to="/login">← Back to sign in</Link>
+                    <Link to="/login">Back to sign in</Link>
                 </div>
             </div>
         </div>

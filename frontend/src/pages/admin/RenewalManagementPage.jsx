@@ -93,12 +93,13 @@ const RenewalManagementPage = () => {
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     {certs.map(cert => {
+                        const certId = cert.id || cert.certId;
                         const days = getDaysUntilExpiry(cert.expiryDate);
-                        const isApproved = approvals[cert.certId] || cert.renewalStatus === 'APPROVED';
-                        const isNotified = notifications[cert.certId];
+                        const isApproved = approvals[certId] || cert.renewalStatus === 'APPROVED';
+                        const isNotified = notifications[certId];
 
                         return (
-                            <div key={cert.certId} style={{
+                            <div key={certId} style={{
                                 background: 'var(--bg-card)',
                                 border: isApproved ? '1px solid rgba(16,185,129,0.35)' : '1px solid var(--border)',
                                 borderRadius: 'var(--radius-md)',
@@ -135,7 +136,7 @@ const RenewalManagementPage = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 150 }}>
                                     <button
                                         className={isApproved ? 'btn-success-custom' : 'btn-success-custom'}
-                                        onClick={() => !isApproved && handleApprove(cert.certId, cert.certName)}
+                                        onClick={() => !isApproved && handleApprove(certId, cert.certName)}
                                         disabled={isApproved}
                                         style={{ opacity: isApproved ? 0.6 : 1, cursor: isApproved ? 'default' : 'pointer' }}
                                     >
@@ -145,7 +146,7 @@ const RenewalManagementPage = () => {
 
                                     <button
                                         className="btn-secondary-custom"
-                                        onClick={() => !isNotified && handleNotify(cert.certId, cert.userName)}
+                                        onClick={() => !isNotified && handleNotify(certId, cert.userName)}
                                         disabled={isNotified}
                                         style={{ opacity: isNotified ? 0.6 : 1, cursor: isNotified ? 'default' : 'pointer', justifyContent: 'center', fontSize: 13 }}
                                     >

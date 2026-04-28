@@ -74,9 +74,10 @@ const MyCertificationsPage = () => {
                         </thead>
                         <tbody>
                             {filtered.map((cert, idx) => {
+                                const certId = cert.id || cert.certId;
                                 const days = getDaysUntilExpiry(cert.expiryDate);
                                 return (
-                                    <tr key={cert.id}>
+                                    <tr key={certId}>
                                         <td style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1}</td>
                                         <td><div className="cert-name-cell">{cert.certName}</div></td>
                                         <td><div className="issuer-cell">{cert.issuedBy}</div></td>
@@ -90,7 +91,7 @@ const MyCertificationsPage = () => {
                                         <td><StatusBadge status={cert.status} /></td>
                                         <td>
                                             <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link to={`/certificate/${cert.id}`} className="btn-icon" title="View">
+                                                <Link to={`/certificate/${certId}`} className="btn-icon" title="View">
                                                     <RiEyeLine />
                                                 </Link>
                                                 {cert.fileUrl && (

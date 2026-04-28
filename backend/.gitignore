@@ -1,0 +1,11 @@
+.env
+.env.local
+target/
+uploads/
+.classpath
+.factorypath
+.project
+.settings/
+dep-list.txt
+effective-pom
+*.log

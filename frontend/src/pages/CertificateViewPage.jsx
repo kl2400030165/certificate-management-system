@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import StatusBadge from '../components/StatusBadge';
 import { formatDate, getDaysUntilExpiry } from '../utils/certUtils';
 import { RiArrowLeftLine, RiDownloadLine, RiAwardLine, RiCalendarLine, RiBuildingLine, RiDeleteBinLine, RiEditLine } from 'react-icons/ri';
@@ -10,6 +11,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const CertificateViewPage = () => {
     const { id } = useParams();
     const { getCertById, deleteCertification } = useData();
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     const [cert, setCert] = useState(null);
@@ -33,6 +35,7 @@ const CertificateViewPage = () => {
     }, [id]);
 
     const handleDelete = async () => {
+        if (user?.role === 'admin') return;
         if (!window.confirm('Are you sure you want to delete this certification?')) return;
         setDeleting(true);
         try {
@@ -58,8 +61,12 @@ const CertificateViewPage = () => {
             <div className="empty-state fade-up">
                 <div className="empty-state-icon">❌</div>
                 <div className="empty-state-text">{error || 'Certificate not found'}</div>
-                <button className="btn-primary-custom" onClick={() => navigate('/certifications')} style={{ marginTop: 16 }}>
-                    <RiArrowLeftLine /> Back to My Certifications
+                <button
+                    className="btn-primary-custom"
+                    onClick={() => navigate(user?.role === 'admin' ? '/admin/certifications' : '/certifications')}
+                    style={{ marginTop: 16 }}
+                >
+                    <RiArrowLeftLine /> {user?.role === 'admin' ? 'Back to All Certifications' : 'Back to My Certifications'}
                 </button>
             </div>
         );
@@ -78,15 +85,17 @@ const CertificateViewPage = () => {
                     <button className="btn-secondary-custom" onClick={() => navigate(-1)}>
                         <RiArrowLeftLine /> Back
                     </button>
-                    <button
-                        className="btn-icon"
-                        title="Delete"
-                        onClick={handleDelete}
-                        disabled={deleting}
-                        style={{ color: 'var(--accent-red)', padding: '8px 14px', borderRadius: 'var(--radius-sm)', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
-                    >
-                        <RiDeleteBinLine /> {deleting ? 'Deleting...' : 'Delete'}
-                    </button>
+                    {user?.role !== 'admin' && (
+                        <button
+                            className="btn-icon"
+                            title="Delete"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            style={{ color: 'var(--accent-red)', padding: '8px 14px', borderRadius: 'var(--radius-sm)', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+                        >
+                            <RiDeleteBinLine /> {deleting ? 'Deleting...' : 'Delete'}
+                        </button>
+                    )}
                 </div>
             </div>
 

@@ -44,7 +44,7 @@ const Sidebar = () => {
         <aside className="sidebar">
             <div className="sidebar-brand">
                 <div className="brand-logo">
-                    <div className="brand-icon">🎓</div>
+                    <div className="brand-icon"><RiShieldCheckLine /></div>
                     <span className="brand-name">CertifyPro</span>
                 </div>
             </div>
@@ -53,7 +53,7 @@ const Sidebar = () => {
                 <div className="user-avatar">{initials}</div>
                 <div className="user-info">
                     <div className="user-name">{user?.name}</div>
-                    <div className="user-role">{user?.role === 'admin' ? '⚡ Admin' : '👤 User'}</div>
+                    <div className="user-role">{user?.role === 'admin' ? 'Admin' : 'User'}</div>
                 </div>
             </div>
 

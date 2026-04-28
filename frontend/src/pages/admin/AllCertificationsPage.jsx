@@ -90,9 +90,10 @@ const AllCertificationsPage = () => {
                                 </td>
                             </tr>
                         ) : filtered.map((cert, idx) => {
+                            const certId = cert.id || cert.certId;
                             const days = getDaysUntilExpiry(cert.expiryDate);
                             return (
-                                <tr key={cert.certId}>
+                                <tr key={certId}>
                                     <td style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1}</td>
                                     <td>
                                         <div style={{ fontWeight: 600, fontSize: 13 }}>{cert.userName}</div>
@@ -108,7 +109,7 @@ const AllCertificationsPage = () => {
                                     </td>
                                     <td><StatusBadge status={cert.status} /></td>
                                     <td>
-                                        <Link to={`/certificate/${cert.certId}`} className="btn-icon">
+                                        <Link to={`/certificate/${certId}`} className="btn-icon">
                                             <RiEyeLine />
                                         </Link>
                                     </td>

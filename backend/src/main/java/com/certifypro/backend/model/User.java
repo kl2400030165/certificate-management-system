@@ -9,7 +9,6 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Entity
@@ -29,6 +28,13 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
+    private String otpCode;
+
+    private LocalDateTime otpExpiresAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     private Role role = Role.USER;
@@ -43,15 +49,6 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(nullable = false)
-    private boolean emailVerified = false;
-
-    @Column(length = 6)
-    private String otpCode;
-
-    @Column
-    private LocalDateTime otpExpiresAt;
-
     public User() {
     }
 
@@ -59,6 +56,9 @@ public class User {
                 String name,
                 String email,
                 String passwordHash,
+                boolean emailVerified,
+                String otpCode,
+                LocalDateTime otpExpiresAt,
                 Role role,
                 boolean notificationsEnabled,
                 NotificationFrequency notificationFrequency,
@@ -67,6 +67,9 @@ public class User {
         this.name = name;
         this.email = email;
         this.passwordHash = passwordHash;
+        this.emailVerified = emailVerified;
+        this.otpCode = otpCode;
+        this.otpExpiresAt = otpExpiresAt;
         this.role = role;
         this.notificationsEnabled = notificationsEnabled;
         this.notificationFrequency = notificationFrequency;
@@ -89,13 +92,6 @@ public class User {
         }
     }
 
-    public boolean isOtpValid(String code) {
-        return code != null
-                && code.equals(otpCode)
-                && otpExpiresAt != null
-                && LocalDateTime.now().isBefore(otpExpiresAt);
-    }
-
     public enum Role {
         USER, ADMIN
     }
@@ -113,11 +109,13 @@ public class User {
         private String name;
         private String email;
         private String passwordHash;
+        private Boolean emailVerified;
+        private String otpCode;
+        private LocalDateTime otpExpiresAt;
         private Role role;
         private Boolean notificationsEnabled;
         private NotificationFrequency notificationFrequency;
         private LocalDateTime createdAt;
-        private boolean emailVerified = false;
 
         public Builder id(String id) {
             this.id = id;
@@ -136,6 +134,21 @@ public class User {
 
         public Builder passwordHash(String passwordHash) {
             this.passwordHash = passwordHash;
+            return this;
+        }
+
+        public Builder emailVerified(boolean emailVerified) {
+            this.emailVerified = emailVerified;
+            return this;
+        }
+
+        public Builder otpCode(String otpCode) {
+            this.otpCode = otpCode;
+            return this;
+        }
+
+        public Builder otpExpiresAt(LocalDateTime otpExpiresAt) {
+            this.otpExpiresAt = otpExpiresAt;
             return this;
         }
 
@@ -159,24 +172,21 @@ public class User {
             return this;
         }
 
-        public Builder emailVerified(boolean emailVerified) {
-            this.emailVerified = emailVerified;
-            return this;
-        }
-
         public User build() {
             User user = new User();
             user.id = this.id;
             user.name = this.name;
             user.email = this.email;
             user.passwordHash = this.passwordHash;
+            user.emailVerified = this.emailVerified != null && this.emailVerified;
+            user.otpCode = this.otpCode;
+            user.otpExpiresAt = this.otpExpiresAt;
             user.role = this.role != null ? this.role : Role.USER;
             user.notificationsEnabled = this.notificationsEnabled != null ? this.notificationsEnabled : true;
             user.notificationFrequency = this.notificationFrequency != null
                     ? this.notificationFrequency
                     : NotificationFrequency.SINGLE;
             user.createdAt = this.createdAt != null ? this.createdAt : LocalDateTime.now();
-            user.emailVerified = this.emailVerified;
             return user;
         }
     }
@@ -213,6 +223,37 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getOtpCode() {
+        return otpCode;
+    }
+
+    public void setOtpCode(String otpCode) {
+        this.otpCode = otpCode;
+    }
+
+    public LocalDateTime getOtpExpiresAt() {
+        return otpExpiresAt;
+    }
+
+    public void setOtpExpiresAt(LocalDateTime otpExpiresAt) {
+        this.otpExpiresAt = otpExpiresAt;
+    }
+
+    public boolean isOtpValid(String code) {
+        return otpCode != null
+                && otpExpiresAt != null
+                && otpCode.equals(code)
+                && otpExpiresAt.isAfter(LocalDateTime.now());
+    }
+
     public Role getRole() {
         return role;
     }
@@ -243,29 +284,5 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public boolean isEmailVerified() {
-        return emailVerified;
-    }
-
-    public void setEmailVerified(boolean emailVerified) {
-        this.emailVerified = emailVerified;
-    }
-
-    public String getOtpCode() {
-        return otpCode;
-    }
-
-    public void setOtpCode(String otpCode) {
-        this.otpCode = otpCode;
-    }
-
-    public LocalDateTime getOtpExpiresAt() {
-        return otpExpiresAt;
-    }
-
-    public void setOtpExpiresAt(LocalDateTime otpExpiresAt) {
-        this.otpExpiresAt = otpExpiresAt;
     }
 }

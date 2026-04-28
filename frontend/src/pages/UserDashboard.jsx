@@ -7,7 +7,7 @@ import CertificationRoadmap from '../components/CertificationRoadmap';
 import { formatDate, getDaysUntilExpiry } from '../utils/certUtils';
 import {
     RiAwardLine, RiCheckLine, RiAlarmWarningLine,
-    RiCloseCircleLine, RiAddCircleLine, RiArrowRightLine
+    RiCloseCircleLine, RiAddCircleLine, RiArrowRightLine, RiEyeLine
 } from 'react-icons/ri';
 
 const UserDashboard = () => {
@@ -26,7 +26,7 @@ const UserDashboard = () => {
         <div className="fade-up">
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">👋 Welcome, {user?.name?.split(' ')[0]}!</h1>
+                    <h1 className="page-title">Welcome, {user?.name?.split(' ')[0]}!</h1>
                     <p className="page-subtitle">Here's your certification overview</p>
                 </div>
                 <Link to="/add-certification" className="btn-primary-custom">
@@ -52,7 +52,7 @@ const UserDashboard = () => {
                     alignItems: 'center',
                     gap: 12,
                 }}>
-                    <span style={{ fontSize: 22 }}>⚠️</span>
+                    <span style={{ fontSize: 22, color: 'var(--accent-orange)', display: 'inline-flex' }}><RiAlarmWarningLine /></span>
                     <div>
                         <div style={{ fontWeight: 600, color: '#f59e0b' }}>Renewal Reminder</div>
                         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 3 }}>
@@ -71,7 +71,7 @@ const UserDashboard = () => {
 
             {recent.length === 0 ? (
                 <div className="empty-state">
-                    <div className="empty-state-icon">🎓</div>
+                    <div className="empty-state-icon"><RiAwardLine /></div>
                     <div className="empty-state-text">No certifications yet</div>
                     <div className="empty-state-sub">Add your first certification to get started</div>
                     <Link to="/add-certification" className="btn-primary-custom" style={{ marginTop: 16, display: 'inline-flex' }}>
@@ -94,9 +94,10 @@ const UserDashboard = () => {
                         </thead>
                         <tbody>
                             {recent.map(cert => {
+                                const certId = cert.id || cert.certId;
                                 const days = getDaysUntilExpiry(cert.expiryDate);
                                 return (
-                                    <tr key={cert.id}>
+                                    <tr key={certId}>
                                         <td><div className="cert-name-cell">{cert.certName}</div></td>
                                         <td><div className="issuer-cell">{cert.issuedBy}</div></td>
                                         <td>{formatDate(cert.issueDate)}</td>
@@ -108,7 +109,7 @@ const UserDashboard = () => {
                                         </td>
                                         <td><StatusBadge status={cert.status} /></td>
                                         <td>
-                                            <Link to={`/certificate/${cert.id}`} className="btn-icon" title="View">👁</Link>
+                                            <Link to={`/certificate/${certId}`} className="btn-icon" title="View"><RiEyeLine /></Link>
                                         </td>
                                     </tr>
                                 );

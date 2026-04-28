@@ -92,7 +92,7 @@ const CalendarViewPage = () => {
         <div className="day-markers">
           {dayCerts.slice(0, 3).map((cert) => (
             <span
-              key={cert.certId}
+              key={cert.id || cert.certId}
               className={`marker ${statusClassMap[cert.status] || 'status-active'}`}
               title={`${cert.certName} (${cert.status})`}
             />
@@ -162,7 +162,7 @@ const CalendarViewPage = () => {
                 const status = cert.status || getCertStatus(cert.expiryDate);
 
                 return (
-                  <article key={cert.certId} className="expiry-card">
+                  <article key={cert.id || cert.certId} className="expiry-card">
                     <div className="expiry-card-header">
                       <h4>{cert.certName}</h4>
                       <span className={`status-chip ${statusClassMap[status]}`}>{status}</span>

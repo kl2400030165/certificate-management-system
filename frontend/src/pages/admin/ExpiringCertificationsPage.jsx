@@ -99,9 +99,10 @@ const ExpiringCertificationsPage = () => {
                                 </td>
                             </tr>
                         ) : certs.map((cert, idx) => {
+                            const certId = cert.id || cert.certId;
                             const days = getDaysUntilExpiry(cert.expiryDate);
                             return (
-                                <tr key={cert.certId}>
+                                <tr key={certId}>
                                     <td style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{idx + 1}</td>
                                     <td style={{ fontWeight: 600, fontSize: 13 }}>{cert.userName}</td>
                                     <td><div className="cert-name-cell">{cert.certName}</div></td>

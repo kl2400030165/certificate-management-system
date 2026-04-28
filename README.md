@@ -62,7 +62,6 @@ Set `VITE_API_URL` in `.env` if the API is not on `http://localhost:8080`.
 | `frontend/` | `npm run dev` | Dev server |
 | `frontend/` | `npm run build` | Production bundle |
 | `frontend/` | `npm run lint` | ESLint |
-| `frontend/` | `npm test` | Vitest unit tests |
 | `backend/` | `mvn test` | JUnit tests |
 | `backend/` | `mvn spring-boot:run` | Run API |
 

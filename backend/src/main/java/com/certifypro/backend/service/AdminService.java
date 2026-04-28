@@ -127,4 +127,13 @@ public class AdminService {
                 })
                 .collect(Collectors.toList());
     }
+
+    public CertResponse getCertById(String certId) {
+        Certification cert = certRepository.findById(certId)
+                .orElseThrow(() -> new IllegalArgumentException("Certification not found"));
+
+        String userName = userRepository.findById(cert.getUserId())
+                .map(User::getName).orElse("Unknown");
+        return certificationService.toResponse(cert, userName);
+    }
 }

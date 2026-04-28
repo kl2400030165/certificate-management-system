@@ -49,7 +49,12 @@ const AddCertificationPage = () => {
         try {
             await saveAndRedirect();
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to save certification');
+            const apiError = err.response?.data;
+            const fallback = 'Failed to save certification';
+            const message = typeof apiError === 'string'
+                ? apiError
+                : apiError?.message || apiError?.error || fallback;
+            setError(message);
         } finally {
             setLoading(false);
         }

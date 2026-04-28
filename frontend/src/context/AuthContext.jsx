@@ -8,7 +8,14 @@ export const useAuth = () => useContext(AuthContext);
 // certToken  → JWT only
 // certUser   → profile fields only (no token — avoids stale token copies)
 const saveSession = (token, userData) => {
-    localStorage.setItem('certToken', token);
+    // During login-init (OTP step) backend returns `token: null`.
+    // Avoid persisting `"null"` as a real token; otherwise protected admin calls will send
+    // `Authorization: Bearer null`.
+    if (token) {
+        localStorage.setItem('certToken', token);
+    } else {
+        localStorage.removeItem('certToken');
+    }
     const { token: _t, ...profile } = userData;   // strip token before storing profile
     localStorage.setItem('certUser', JSON.stringify(profile));
 };

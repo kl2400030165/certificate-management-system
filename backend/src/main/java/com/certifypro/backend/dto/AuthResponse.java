@@ -6,9 +6,9 @@ public class AuthResponse {
     private String name;
     private String email;
     private String role;
+    private boolean emailVerified;
     private boolean notificationsEnabled;
     private String notificationFrequency;
-    private boolean emailVerified;
 
     public AuthResponse() {
     }
@@ -18,17 +18,17 @@ public class AuthResponse {
                         String name,
                         String email,
                         String role,
+                        boolean emailVerified,
                         boolean notificationsEnabled,
-                        String notificationFrequency,
-                        boolean emailVerified) {
+                        String notificationFrequency) {
         this.token = token;
         this.userId = userId;
         this.name = name;
         this.email = email;
         this.role = role;
+        this.emailVerified = emailVerified;
         this.notificationsEnabled = notificationsEnabled;
         this.notificationFrequency = notificationFrequency;
-        this.emailVerified = emailVerified;
     }
 
     public static Builder builder() {
@@ -41,9 +41,9 @@ public class AuthResponse {
         private String name;
         private String email;
         private String role;
+        private boolean emailVerified;
         private boolean notificationsEnabled;
         private String notificationFrequency;
-        private boolean emailVerified;
 
         public Builder token(String token) {
             this.token = token;
@@ -70,6 +70,11 @@ public class AuthResponse {
             return this;
         }
 
+        public Builder emailVerified(boolean emailVerified) {
+            this.emailVerified = emailVerified;
+            return this;
+        }
+
         public Builder notificationsEnabled(boolean notificationsEnabled) {
             this.notificationsEnabled = notificationsEnabled;
             return this;
@@ -80,38 +85,72 @@ public class AuthResponse {
             return this;
         }
 
-        public Builder emailVerified(boolean emailVerified) {
-            this.emailVerified = emailVerified;
-            return this;
-        }
-
         public AuthResponse build() {
-            return new AuthResponse(token, userId, name, email, role,
-                    notificationsEnabled, notificationFrequency, emailVerified);
+            return new AuthResponse(token, userId, name, email, role, emailVerified, notificationsEnabled, notificationFrequency);
         }
     }
 
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
+    public String getToken() {
+        return token;
+    }
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public void setToken(String token) {
+        this.token = token;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getUserId() {
+        return userId;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    public String getName() {
+        return name;
+    }
 
-    public boolean isNotificationsEnabled() { return notificationsEnabled; }
-    public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getNotificationFrequency() { return notificationFrequency; }
-    public void setNotificationFrequency(String notificationFrequency) { this.notificationFrequency = notificationFrequency; }
+    public String getEmail() {
+        return email;
+    }
 
-    public boolean isEmailVerified() { return emailVerified; }
-    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public boolean isNotificationsEnabled() {
+        return notificationsEnabled;
+    }
+
+    public void setNotificationsEnabled(boolean notificationsEnabled) {
+        this.notificationsEnabled = notificationsEnabled;
+    }
+
+    public String getNotificationFrequency() {
+        return notificationFrequency;
+    }
+
+    public void setNotificationFrequency(String notificationFrequency) {
+        this.notificationFrequency = notificationFrequency;
+    }
 }

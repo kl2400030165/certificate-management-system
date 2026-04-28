@@ -43,9 +43,7 @@ export const DataProvider = ({ children }) => {
         formData.append('expiryDate', certData.expiryDate);
         if (certData.file) formData.append('file', certData.file);
 
-        const res = await api.post('/api/certs', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
+        const res = await api.post('/api/certs', formData);
         setCerts(prev => [...prev, res.data]);
         return res.data;
     };
@@ -62,7 +60,10 @@ export const DataProvider = ({ children }) => {
     };
 
     const getCertById = async (certId) => {
-        const res = await api.get(`/api/certs/${certId}`);
+        const endpoint = user?.role === 'admin'
+            ? `/api/admin/certs/${certId}`
+            : `/api/certs/${certId}`;
+        const res = await api.get(endpoint);
         return res.data;
     };
 

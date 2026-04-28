@@ -3,9 +3,7 @@ package com.certifypro.backend.service;
 import com.certifypro.backend.dto.CertRequest;
 import com.certifypro.backend.dto.CertResponse;
 import com.certifypro.backend.model.Certification;
-import com.certifypro.backend.model.User;
 import com.certifypro.backend.repository.CertificationRepository;
-import com.certifypro.backend.repository.UserRepository;
 import com.certifypro.backend.util.CertUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,18 +32,12 @@ public class CertificationService {
     );
 
     private final CertificationRepository certRepository;
-    private final UserRepository userRepository;
-    private final EmailService emailService;
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
 
-    public CertificationService(CertificationRepository certRepository,
-                                UserRepository userRepository,
-                                EmailService emailService) {
+    public CertificationService(CertificationRepository certRepository) {
         this.certRepository = certRepository;
-        this.userRepository = userRepository;
-        this.emailService = emailService;
     }
 
     public List<CertResponse> getMyCerts(String userId) {
@@ -80,10 +72,6 @@ public class CertificationService {
                 .build();
 
         certRepository.save(cert);
-
-        // Send "certificate added" notification email
-        userRepository.findById(userId).ifPresent(user -> emailService.sendCertAddedEmail(user, cert));
-
         return toResponse(cert, null);
     }
 
@@ -181,7 +169,7 @@ public class CertificationService {
             }
 
             String cleanedName = Paths.get(originalName).getFileName().toString();
-            String extension = originalName.contains(".")
+            String extension = originalName != null && originalName.contains(".")
                     ? originalName.substring(originalName.lastIndexOf(".")).toLowerCase(Locale.ROOT)
                     : "";
 
