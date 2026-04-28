@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: certifypro-backend
+    runtime: java
+    rootDir: backend
+    buildCommand: chmod +x mvnw && ./mvnw clean package -DskipTests
+    startCommand: java -jar target/certifypro-backend-1.0.0.jar
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: JAVA_HOME
+        value: /usr/lib/jvm/java-21-openjdk-amd64
+      - key: MYSQL_URL
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 604800000
+      - key: FILE_UPLOAD_DIR
+        value: uploads
+      - key: EMAIL_MOCK
+        value: false
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NAME
+        value: System Admin
+      - key: ADMIN_SEED_ENABLED
+        value: true
+      - key: CLIENT_URL
+        value: https://certificate-management-system-zeta.vercel.app
