@@ -26,6 +26,9 @@ public class EmailService {
     @Value("${email.from:CertifyPro <noreply@certifypro.com>}")
     private String emailFrom;
 
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
@@ -76,15 +79,42 @@ public class EmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(emailFrom);
+            helper.setFrom(resolveFromAddress());
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
             mailSender.send(message);
             log.info("✅ Email sent to: {}", to);
         } catch (Exception e) {
-            log.error("❌ Failed to send email to {}: {}", to, e.getMessage());
+            log.error("❌ Failed to send email to {}: {}", to, e.getMessage(), e);
         }
+    }
+
+    String resolveFromAddress() {
+        String configuredFrom = clean(emailFrom);
+        String username = clean(mailUsername);
+
+        if (configuredFrom == null || isPlaceholderFrom(configuredFrom)) {
+            if (username == null || "your@gmail.com".equalsIgnoreCase(username)) {
+                throw new IllegalStateException("Email sender is not configured. Set EMAIL_USER and EMAIL_PASS.");
+            }
+            return username;
+        }
+
+        return configuredFrom;
+    }
+
+    private boolean isPlaceholderFrom(String value) {
+        String lower = value.toLowerCase();
+        return lower.contains("noreply@certifypro.com") || lower.contains("your@gmail.com");
+    }
+
+    private String clean(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private String buildWelcomeBody(String name) {
