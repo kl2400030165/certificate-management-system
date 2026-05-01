@@ -9,8 +9,11 @@ const clearStoredSession = () => {
   localStorage.removeItem('certUser');
 };
 
+const apiBaseUrl = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:8080' : 'https://certificate-management-system-backend.onrender.com');
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+  baseURL: apiBaseUrl,
 });
 
 // Attach JWT token to every request
