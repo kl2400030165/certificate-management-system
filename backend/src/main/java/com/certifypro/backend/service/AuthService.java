@@ -8,9 +8,11 @@ import com.certifypro.backend.repository.UserRepository;
 import com.certifypro.backend.security.JwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
 
 @Service
+@Transactional(readOnly = true)
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -28,6 +30,7 @@ public class AuthService {
         this.otpService = otpService;
     }
 
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
         if (userRepository.existsByEmail(normalizedEmail)) {
@@ -52,6 +55,7 @@ public class AuthService {
         return loginInitiate(request);
     }
 
+    @Transactional
     public AuthResponse loginInitiate(LoginRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
         User user = userRepository.findByEmail(normalizedEmail)
@@ -70,18 +74,21 @@ public class AuthService {
         throw new IllegalArgumentException("EMAIL_NOT_VERIFIED");
     }
 
+    @Transactional
     public AuthResponse loginComplete(String email, String code) {
         User user = otpService.verifyLoginOtp(normalizeEmail(email), code);
         String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
         return buildAuthResponse(token, user);
     }
 
+    @Transactional
     public AuthResponse verifyOtp(String email, String code) {
         User user = otpService.verifyRegistrationOrLoginOtp(normalizeEmail(email), code);
         String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
         return buildAuthResponse(token, user);
     }
 
+    @Transactional
     public void resendOtp(String email) {
         otpService.resendOtpSmart(normalizeEmail(email));
     }
@@ -93,6 +100,7 @@ public class AuthService {
         return buildAuthResponse(token, user);
     }
 
+    @Transactional
     public AuthResponse updateNotificationPreferences(String userId, Boolean enabled, String frequency) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));

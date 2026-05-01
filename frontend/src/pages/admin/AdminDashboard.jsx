@@ -11,13 +11,20 @@ import {
 
 const AdminDashboard = () => {
     const {
-        getAllCerts,
+        getExpiringCerts,
+        getStats,
         runDailyReminders,
         runWeeklyDigest,
         getReminderJobLogs,
         clearReminderJobLogs,
     } = useData();
-    const [allCerts, setAllCerts] = useState([]);
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        totalCerts: 0,
+        expiringSoon: 0,
+        expired: 0,
+    });
+    const [recentExpiring, setRecentExpiring] = useState([]);
     const [loading, setLoading] = useState(true);
     const [jobRunning, setJobRunning] = useState('');
     const [jobMessage, setJobMessage] = useState('');
@@ -57,28 +64,36 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchCerts = async () => {
             try {
-                const certs = await getAllCerts();
-                setAllCerts(certs || []);
+                const [nextStats, expiringCerts] = await Promise.all([
+                    getStats(),
+                    getExpiringCerts(),
+                ]);
+                setStats({
+                    totalUsers: nextStats?.totalUsers || 0,
+                    totalCerts: nextStats?.totalCerts || 0,
+                    expiringSoon: nextStats?.expiringSoon || 0,
+                    expired: nextStats?.expired || 0,
+                });
+                setRecentExpiring(Array.isArray(expiringCerts) ? expiringCerts.slice(0, 6) : []);
             } catch (err) {
                 console.error('Failed to fetch admin certs:', err);
-                setAllCerts([]);
+                setRecentExpiring([]);
             } finally {
                 setLoading(false);
             }
         };
         fetchCerts();
-    }, [getAllCerts]);
+    }, [getExpiringCerts, getStats]);
 
     if (loading) {
         return <div className="page-title">⏳ Loading...</div>;
     }
 
-    const totalUsers = [...new Set(allCerts.map(c => c.userId))].length;
-    const totalCerts = allCerts.length;
-    const expiring = allCerts.filter(c => c.status === 'EXPIRING SOON').length;
-    const expired = allCerts.filter(c => c.status === 'EXPIRED').length;
-
-    const recentExpiring = allCerts.filter(c => c.status !== 'ACTIVE').slice(0, 6);
+    const totalUsers = stats.totalUsers;
+    const totalCerts = stats.totalCerts;
+    const expiring = stats.expiringSoon;
+    const expired = stats.expired;
+    const active = Math.max(totalCerts - expiring - expired, 0);
 
     const handleRunDaily = async () => {
         setJobRunning('daily');
@@ -272,7 +287,7 @@ const AdminDashboard = () => {
                     <div className="section-title">📊 System Health</div>
                     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 24 }}>
                         {[
-                            { label: 'Active Rate', value: totalCerts ? `${((allCerts.filter(c => c.status === 'ACTIVE').length / totalCerts) * 100).toFixed(0)}%` : '0%', color: 'var(--accent-green)' },
+                            { label: 'Active Rate', value: totalCerts ? `${((active / totalCerts) * 100).toFixed(0)}%` : '0%', color: 'var(--accent-green)' },
                             { label: 'Expiring Soon', value: totalCerts ? `${((expiring / totalCerts) * 100).toFixed(0)}%` : '0%', color: 'var(--accent-orange)' },
                             { label: 'Expired', value: totalCerts ? `${((expired / totalCerts) * 100).toFixed(0)}%` : '0%', color: 'var(--accent-red)' },
                         ].map(stat => (

@@ -6,15 +6,18 @@ import com.certifypro.backend.model.User;
 import com.certifypro.backend.repository.CertificationRepository;
 import com.certifypro.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class AdminService {
 
     private final CertificationRepository certRepository;
@@ -31,13 +34,11 @@ public class AdminService {
     }
 
     public List<CertResponse> getAllCerts() {
-        return certRepository.findAll()
-                .stream()
-                .map(cert -> {
-                    String userName = userRepository.findById(cert.getUserId())
-                            .map(User::getName).orElse("Unknown");
-                    return certificationService.toResponse(cert, userName);
-                })
+        List<Certification> certs = certRepository.findAll();
+        Map<String, String> userNames = getUserNames(certs);
+
+        return certs.stream()
+                .map(cert -> certificationService.toResponse(cert, userNames.getOrDefault(cert.getUserId(), "Unknown")))
                 .collect(Collectors.toList());
     }
 
@@ -55,26 +56,21 @@ public class AdminService {
                     today, today, today.plusDays(30));
         }
 
+        Map<String, String> userNames = getUserNames(certs);
+
         return certs.stream()
-                .map(cert -> {
-                    String userName = userRepository.findById(cert.getUserId())
-                            .map(User::getName).orElse("Unknown");
-                    return certificationService.toResponse(cert, userName);
-                })
+                .map(cert -> certificationService.toResponse(cert, userNames.getOrDefault(cert.getUserId(), "Unknown")))
                 .collect(Collectors.toList());
     }
 
     public Map<String, Object> getStats() {
-        List<Certification> allCerts = certRepository.findAll();
         LocalDate today = LocalDate.now();
 
-        long total = allCerts.size();
-        long active = allCerts.stream().filter(c -> c.getExpiryDate().isAfter(today.plusDays(30))).count();
-        long expiringSoon = allCerts.stream()
-                .filter(c -> !c.getExpiryDate().isBefore(today) && c.getExpiryDate().isBefore(today.plusDays(31)))
-                .count();
-        long expired = allCerts.stream().filter(c -> c.getExpiryDate().isBefore(today)).count();
-        long totalUsers = userRepository.findAll().stream().filter(u -> u.getRole() == User.Role.USER).count();
+        long total = certRepository.count();
+        long active = certRepository.countByExpiryDateAfter(today.plusDays(30));
+        long expiringSoon = certRepository.countByExpiryDateBetween(today, today.plusDays(30));
+        long expired = certRepository.countByExpiryDateBefore(today);
+        long totalUsers = userRepository.countByRole(User.Role.USER);
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalCerts", total);
@@ -85,6 +81,7 @@ public class AdminService {
         return stats;
     }
 
+    @Transactional
     public CertResponse approveRenewal(String certId) {
         Certification cert = certRepository.findById(certId)
                 .orElseThrow(() -> new IllegalArgumentException("Certification not found"));
@@ -93,14 +90,16 @@ public class AdminService {
         certRepository.save(cert);
 
         // Send approval email to the user
-        userRepository.findById(cert.getUserId())
-                .ifPresent(user -> emailService.sendRenewalApprovedEmail(user, cert));
+        User user = userRepository.findById(cert.getUserId()).orElse(null);
+        if (user != null) {
+            emailService.sendRenewalApprovedEmail(user, cert);
+        }
 
-        String userName = userRepository.findById(cert.getUserId())
-                .map(User::getName).orElse("Unknown");
+        String userName = user != null ? user.getName() : "Unknown";
         return certificationService.toResponse(cert, userName);
     }
 
+    @Transactional
     public void notifyUser(String certId) {
         Certification cert = certRepository.findById(certId)
                 .orElseThrow(() -> new IllegalArgumentException("Certification not found"));
@@ -116,8 +115,7 @@ public class AdminService {
     }
 
     public List<Map<String, String>> getAllUsers() {
-        return userRepository.findAll().stream()
-                .filter(u -> u.getRole() == User.Role.USER)
+        return userRepository.findByRole(User.Role.USER).stream()
                 .map(u -> {
                     Map<String, String> map = new HashMap<>();
                     map.put("userId", u.getId());
@@ -135,5 +133,14 @@ public class AdminService {
         String userName = userRepository.findById(cert.getUserId())
                 .map(User::getName).orElse("Unknown");
         return certificationService.toResponse(cert, userName);
+    }
+
+    private Map<String, String> getUserNames(List<Certification> certs) {
+        Set<String> userIds = certs.stream()
+                .map(Certification::getUserId)
+                .collect(Collectors.toSet());
+
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getName, (first, second) -> first));
     }
 }

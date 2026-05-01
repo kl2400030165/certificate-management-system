@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
+import LoadingSplash from '../components/LoadingSplash';
 
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
@@ -31,6 +32,7 @@ const clearSession = () => {
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loadingMessage, setLoadingMessage] = useState('Connecting to server...');
 
     // Restore session on app load
     useEffect(() => {
@@ -38,15 +40,24 @@ export const AuthProvider = ({ children }) => {
         const stored = localStorage.getItem('certUser');
         if (token && stored) {
             setUser(JSON.parse(stored));
+            setLoadingMessage('Verifying your session...');
+
+            // Show a "taking longer than usual" message after 5s (Render cold start)
+            const slowTimer = setTimeout(() => {
+                setLoadingMessage('Server is waking up, almost there...');
+            }, 5000);
+
             // Verify token is still valid — reuse same token (don't re-issue)
             api.get('/api/auth/me')
                 .then(res => {
+                    clearTimeout(slowTimer);
                     const { token: _t, ...profile } = res.data;  // ignore any token in response
                     setUser(profile);
                     localStorage.setItem('certUser', JSON.stringify(profile));
                     // certToken stays the same — not overwritten
                 })
                 .catch(() => {
+                    clearTimeout(slowTimer);
                     clearSession();
                     setUser(null);
                 })
@@ -92,7 +103,10 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
-            {!loading && children}
+            {loading
+                ? <LoadingSplash message={loadingMessage} />
+                : children
+            }
         </AuthContext.Provider>
     );
 };

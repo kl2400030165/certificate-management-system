@@ -3,6 +3,7 @@ package com.certifypro.backend.scheduler;
 import com.certifypro.backend.model.Certification;
 import com.certifypro.backend.model.User;
 import com.certifypro.backend.repository.CertificationRepository;
+import com.certifypro.backend.repository.UserRepository;
 import com.certifypro.backend.service.EmailService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.certifypro.backend.repository.UserRepository;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ExpirationReminderScheduler {
@@ -51,10 +53,11 @@ public class ExpirationReminderScheduler {
         List<Certification> expiringCerts = certRepository.findByExpiryDateBetween(prevDate, targetDate).stream()
                 .filter(c -> !c.isExpired() && !c.isRemindersDisabled())
                 .toList();
+        Map<String, User> users = getUsersById(expiringCerts);
 
         for (Certification cert : expiringCerts) {
             try {
-                var user = userRepository.findById(cert.getUserId()).orElse(null);
+                var user = users.get(cert.getUserId());
                 if (user == null) {
                     log.warn("User not found for certification: {}", cert.getId());
                     continue;
@@ -81,10 +84,11 @@ public class ExpirationReminderScheduler {
         List<Certification> soonToExpire = certRepository.findByExpiryDateBefore(soon).stream()
                 .filter(c -> !c.isExpired() && !c.isRemindersDisabled())
                 .toList();
+        Map<String, User> users = getUsersById(soonToExpire);
 
         Map<String, List<Certification>> certsByUser = new HashMap<>();
         for (Certification cert : soonToExpire) {
-            var user = userRepository.findById(cert.getUserId()).orElse(null);
+            var user = users.get(cert.getUserId());
             if (user == null) continue;
             if (!user.isNotificationsEnabled() || user.getNotificationFrequency() != User.NotificationFrequency.WEEKLY) {
                 continue;
@@ -94,12 +98,21 @@ public class ExpirationReminderScheduler {
 
         int sent = 0;
         for (Map.Entry<String, List<Certification>> entry : certsByUser.entrySet()) {
-            var user = userRepository.findById(entry.getKey()).orElse(null);
+            var user = users.get(entry.getKey());
             if (user == null || entry.getValue().isEmpty()) continue;
             emailService.sendWeeklyDigestEmail(user, entry.getValue());
             sent++;
         }
 
         log.info("✅ Weekly summary: {} digest email(s) sent", sent);
+    }
+
+    private Map<String, User> getUsersById(List<Certification> certs) {
+        Set<String> userIds = certs.stream()
+                .map(Certification::getUserId)
+                .collect(Collectors.toSet());
+
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user, (first, second) -> first));
     }
 }

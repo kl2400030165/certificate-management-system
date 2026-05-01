@@ -14,4 +14,7 @@ public interface CertificationRepository extends JpaRepository<Certification, St
     List<Certification> findByExpiryDateBetween(LocalDate start, LocalDate end);
     List<Certification> findByExpiryDateBeforeOrExpiryDateBetween(
         LocalDate expiredBefore, LocalDate expiringStart, LocalDate expiringEnd);
+    long countByExpiryDateAfter(LocalDate date);
+    long countByExpiryDateBefore(LocalDate date);
+    long countByExpiryDateBetween(LocalDate start, LocalDate end);
 }

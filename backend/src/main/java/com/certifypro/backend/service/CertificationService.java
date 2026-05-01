@@ -6,7 +6,10 @@ import com.certifypro.backend.model.Certification;
 import com.certifypro.backend.repository.CertificationRepository;
 import com.certifypro.backend.util.CertUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -22,6 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class CertificationService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".pdf", ".png", ".jpg", ".jpeg");
@@ -40,6 +44,7 @@ public class CertificationService {
         this.certRepository = certRepository;
     }
 
+    @Cacheable(value = "userCerts", key = "#userId")
     public List<CertResponse> getMyCerts(String userId) {
         return certRepository.findByUserId(userId)
                 .stream()
@@ -47,6 +52,8 @@ public class CertificationService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    @CacheEvict(value = "userCerts", key = "#userId")
     public CertResponse addCert(String userId, CertRequest request, MultipartFile file) {
         if (request.getExpiryDate().isBefore(request.getIssueDate()) ||
             request.getExpiryDate().isEqual(request.getIssueDate())) {
@@ -75,6 +82,8 @@ public class CertificationService {
         return toResponse(cert, null);
     }
 
+    @Transactional
+    @CacheEvict(value = "userCerts", key = "#userId")
     public CertResponse updateCert(String certId, String userId, CertRequest request) {
         Certification cert = certRepository.findById(certId)
                 .orElseThrow(() -> new IllegalArgumentException("Certification not found"));
@@ -92,6 +101,8 @@ public class CertificationService {
         return toResponse(cert, null);
     }
 
+    @Transactional
+    @CacheEvict(value = "userCerts", key = "#userId")
     public void deleteCert(String certId, String userId) {
         Certification cert = certRepository.findById(certId)
                 .orElseThrow(() -> new IllegalArgumentException("Certification not found"));
@@ -122,6 +133,8 @@ public class CertificationService {
         return toResponse(cert, null);
     }
 
+    @Transactional
+    @CacheEvict(value = "userCerts", key = "#userId")
     public CertResponse updateReminderPreference(String certId, String userId, boolean disabled) {
         Certification cert = certRepository.findById(certId)
                 .orElseThrow(() -> new IllegalArgumentException("Certification not found"));

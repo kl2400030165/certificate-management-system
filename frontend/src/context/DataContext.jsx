@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import api from '../utils/api';
 import { getCertStatus } from '../utils/certUtils';
@@ -10,28 +10,36 @@ export const DataProvider = ({ children }) => {
     const { user } = useAuth();
     const [certs, setCerts] = useState([]);
     const [loading, setLoading] = useState(false);
+    const abortRef = useRef(null);
 
-    // Fetch user's certs when user logs in
-    useEffect(() => {
-        if (user) {
-            fetchMyCerts();
-        } else {
-            setCerts([]);
-        }
-    }, [user]);
-
-    const fetchMyCerts = async () => {
+    const fetchMyCerts = useCallback(async () => {
         if (!user) return;
+
+        // Cancel any previous in-flight request to prevent race conditions
+        if (abortRef.current) abortRef.current.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         setLoading(true);
         try {
-            const res = await api.get('/api/certs');
+            const res = await api.get('/api/certs', { signal: controller.signal });
             setCerts(res.data);
         } catch (err) {
+            if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') return;
             console.error('Failed to fetch certs:', err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
+
+    // Fetch user's certs when user logs in
+    useEffect(() => {
+        if (user && user.role !== 'admin') {
+            fetchMyCerts();
+        } else {
+            setCerts([]);
+        }
+    }, [user, fetchMyCerts]);
 
     const getMyCerts = () => certs;
 

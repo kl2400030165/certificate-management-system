@@ -9,7 +9,6 @@ import com.certifypro.backend.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -68,23 +67,23 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getMe(@AuthenticationPrincipal UserDetails userDetails) {
-        if (userDetails == null) {
+    public ResponseEntity<?> getMe(@AuthenticationPrincipal String userId) {
+        if (userId == null) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
-        AuthResponse response = authService.getMe(userDetails.getUsername());
+        AuthResponse response = authService.getMe(userId);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/preferences/notifications")
-    public ResponseEntity<?> updateNotificationPreferences(@AuthenticationPrincipal UserDetails userDetails,
+    public ResponseEntity<?> updateNotificationPreferences(@AuthenticationPrincipal String userId,
                                                            @RequestBody NotificationPreferencesRequest request) {
-        if (userDetails == null) {
+        if (userId == null) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
         try {
             AuthResponse response = authService.updateNotificationPreferences(
-                    userDetails.getUsername(),
+                    userId,
                     request.getNotificationsEnabled(),
                     request.getNotificationFrequency()
             );
