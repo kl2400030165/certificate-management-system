@@ -14,7 +14,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@eslint/js": "^8.57.1",
@@ -26,6 +27,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^13.24.0",
-    "vite": "^4.3.4"
+    "vite": "^4.3.4",
+    "vitest": "^3.2.4"
   }
 }
