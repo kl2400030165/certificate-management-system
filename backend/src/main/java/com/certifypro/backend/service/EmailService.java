@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
@@ -29,18 +30,21 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
+    @Async
     public void sendWelcomeEmail(User user) {
         String subject = "Welcome to CertifyPro! 🎓";
         String body = buildWelcomeBody(user.getName());
         send(user.getEmail(), subject, body);
     }
 
+    @Async
     public void sendOtpEmail(User user, String otp) {
         String subject = "Your CertifyPro verification code";
         String body = buildOtpBody(user.getName(), otp);
         send(user.getEmail(), subject, body);
     }
 
+    @Async
     public void sendReminderEmail(User user, Certification cert, long daysLeft) {
         String subject = daysLeft <= 0
                 ? "⚠️ Certificate EXPIRED: " + cert.getCertName()
@@ -49,12 +53,14 @@ public class EmailService {
         send(user.getEmail(), subject, body);
     }
 
+    @Async
     public void sendRenewalApprovedEmail(User user, Certification cert) {
         String subject = "✅ Renewal Approved: " + cert.getCertName();
         String body = buildRenewalApprovedBody(user.getName(), cert);
         send(user.getEmail(), subject, body);
     }
 
+    @Async
     public void sendWeeklyDigestEmail(User user, List<Certification> certs) {
         if (certs == null || certs.isEmpty()) return;
         String subject = "📊 Weekly Certification Expiry Digest";
