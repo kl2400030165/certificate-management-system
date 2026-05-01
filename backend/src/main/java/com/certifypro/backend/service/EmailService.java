@@ -40,7 +40,6 @@ public class EmailService {
         send(user.getEmail(), subject, body);
     }
 
-    @Async
     public void sendOtpEmail(User user, String otp) {
         String subject = "Your CertifyPro verification code";
         String body = buildOtpBody(user.getName(), otp);
@@ -87,6 +86,7 @@ public class EmailService {
             log.info("✅ Email sent to: {}", to);
         } catch (Exception e) {
             log.error("❌ Failed to send email to {}: {}", to, e.getMessage(), e);
+            throw new IllegalStateException("Failed to send email. Check EMAIL_USER, EMAIL_PASS, EMAIL_FROM and SMTP access.", e);
         }
     }
 
